@@ -87,19 +87,26 @@ Generation requests are validated before provider calls. Groq is asked for JSON-
 
 ### Render (backend)
 
-1. Create a Render **Web Service** using this repository and set its root directory to `backend` (the included `backend/render.yaml` is also available as a Blueprint).
-2. Build command: `pip install -r requirements.txt`.
-3. Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
-4. Add `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `GROQ_API_KEY`, and `ALLOWED_ORIGINS` as Render environment variables. `ALLOWED_ORIGINS` must contain the exact Vercel production URL (comma-separate additional preview origins if needed). Add `UNSPLASH_ACCESS_KEY` for images; it is optional.
-5. Render uses `/health` as its health check. Keep all provider keys and the Supabase service-role key in Render's secret environment settings.
+1. Sign in to [Render](https://dashboard.render.com/) and create a **New → Web Service** from `soumiljaiswal79-star/travel-itinerary`. Authorize GitHub access if prompted.
+2. Set the service root directory to `backend` (use the manual Web Service setup; `render.yaml` contains the service configuration).
+3. Use build command `pip install -r requirements.txt` and start command `uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
+4. Set `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `GROQ_API_KEY`, and `ALLOWED_ORIGINS` as environment variables in Render. For the first deploy, set `ALLOWED_ORIGINS` to a placeholder such as `https://example.com`; update it after Vercel creates your real production domain. `GROQ_MODEL` defaults to `qwen/qwen3.8-27b`. Add `UNSPLASH_ACCESS_KEY` for images; it is optional.
+5. Render uses `/health` as its health check. Keep all provider keys and the Supabase service-role key in Render's environment settings—never commit or paste them into chat.
+6. Deploy, wait for the service to become **Live**, and verify `https://YOUR-RENDER-SERVICE.onrender.com/health` returns `{"status":"ok"}`. Copy the service's public URL.
 
 ### Vercel (frontend)
 
-1. Import the repository into Vercel and set the project root directory to `frontend`.
-2. Vercel detects Vite; use `npm run build` and `dist` if prompted.
-3. Set `VITE_API_URL` to the Render API origin plus `/api`, for example `https://wayfarer-api.onrender.com/api`.
-4. Redeploy after setting the variable. Configure the Render `ALLOWED_ORIGINS` value to the exact Vercel URL.
-5. Do not add any Supabase, Groq, or Unsplash secret to Vercel. The Vite variable is only the public FastAPI base URL.
+1. Sign in to [Vercel](https://vercel.com/new) and import `https://github.com/soumiljaiswal79-star/travel-itinerary`. Authorize GitHub access if prompted.
+2. Set the project root directory to `frontend`. Use build command `npm run build` and output directory `dist`.
+3. Add `VITE_API_URL` as a Vercel environment variable, set to your Render service URL plus `/api`, e.g. `https://YOUR-RENDER-SERVICE.onrender.com/api`. Do not add Supabase, Groq, or Unsplash secrets to Vercel.
+4. Deploy and copy the Vercel production domain.
+
+### Finish the connection
+
+1. In Render, set `ALLOWED_ORIGINS` to the exact Vercel production origin, e.g. `https://YOUR-PROJECT.vercel.app` (no path or trailing slash). Include comma-separated origins only if you will use them.
+2. Save the Render environment change and trigger a redeploy/restart.
+3. In Supabase **Authentication → URL Configuration**, set **Site URL** to the Vercel production URL. Add the production URL to **Redirect URLs** too if you enable email confirmation or configure confirmation links.
+4. Open the Vercel URL, create an account, and test a short itinerary. Render's free service may sleep after inactivity, so its first request can take a little while.
 
 ## Tests and checks
 
