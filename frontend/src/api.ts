@@ -59,6 +59,29 @@ export class ApiError extends Error {
   }
 }
 
+function formatApiDetail(detail: unknown): string | null {
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    const messages = detail.map((item) => {
+      if (typeof item === "string") return item;
+      if (!item || typeof item !== "object") return null;
+      const error = item as { loc?: unknown[]; msg?: unknown };
+      const location = Array.isArray(error.loc)
+        ? error.loc.filter((part) => typeof part === "string" || typeof part === "number").join(".")
+        : "";
+      const message = typeof error.msg === "string" ? error.msg : "";
+      return location && message ? `${location}: ${message}` : message || null;
+    }).filter((message): message is string => Boolean(message));
+    return messages.length ? messages.join(" ") : null;
+  }
+  if (detail && typeof detail === "object") {
+    const error = detail as { message?: unknown; msg?: unknown };
+    if (typeof error.message === "string") return error.message;
+    if (typeof error.msg === "string") return error.msg;
+  }
+  return null;
+}
+
 async function fetchApi(url: string, options: RequestInit): Promise<Response> {
   try {
     return await fetch(url, options);
@@ -88,8 +111,10 @@ export async function api<T>(path: string, options: RequestInit = {}, canRefresh
   if (!response.ok) {
     let message = `Request failed (${response.status}).`;
     try {
-      const payload = (await response.json()) as { detail?: string };
-      if (payload.detail) message = payload.detail;
+      const payload = (await response.json()) as { detail?: unknown; message?: unknown };
+      const detail = formatApiDetail(payload.detail);
+      const topLevelMessage = typeof payload.message === "string" ? payload.message : null;
+      if (detail || topLevelMessage) message = detail || topLevelMessage || message;
     } catch {
       // The API may return a non-JSON error response.
     }
