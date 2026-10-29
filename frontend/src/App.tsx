@@ -118,17 +118,15 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: (user: User, session
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     setError("");
-    setNotice("");
     setBusy(true);
     try {
       const result = await postJson<ApiSessionResponse>(`/auth/${mode}`, { email, password });
       if (!result.session) {
-        setNotice("Check your inbox to verify your email, then sign in to start planning.");
+        setError("Your account was created, but automatic sign-in failed. Please sign in.");
         setMode("login");
       } else {
         onAuthenticated(result.user, result.session);
@@ -164,10 +162,9 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: (user: User, session
             <label>Email address<input type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(event) => setEmail(event.target.value)} required /></label>
             <label>Password<input type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} placeholder="At least 8 characters" value={password} onChange={(event) => setPassword(event.target.value)} minLength={8} required /></label>
             {error && <div className="form-message error-message">{error}</div>}
-            {notice && <div className="form-message success-message">{notice}</div>}
             <button className="button button-dark auth-submit" disabled={busy}>{busy ? "One moment..." : mode === "login" ? "Sign in" : "Create account"}<ArrowRight size={17} /></button>
           </form>
-          <div className="auth-switch">{mode === "login" ? "New around here?" : "Already have an account?"}{" "}<button onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(""); setNotice(""); }}>{mode === "login" ? "Create an account" : "Sign in"}</button></div>
+          <div className="auth-switch">{mode === "login" ? "New around here?" : "Already have an account?"}{" "}<button onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(""); }}>{mode === "login" ? "Create an account" : "Sign in"}</button></div>
           <div className="auth-footer"><span>Private by nature</span><span className="footer-dot" /> Your trips, your call <CircleHelp size={13} /></div>
         </div>
       </section>

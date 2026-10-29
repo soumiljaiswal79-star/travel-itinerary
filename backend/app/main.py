@@ -134,7 +134,14 @@ def _generate_or_raise(settings: Settings, request: GenerateTripRequest, refinem
 @app.post("/api/auth/signup", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
 def signup(credentials: AuthCredentials, settings: SettingsDep) -> AuthResponse:
     try:
-        result = auth_client(settings).auth.sign_up(
+        db_client(settings).auth.admin.create_user(
+            {
+                "email": str(credentials.email),
+                "password": credentials.password,
+                "email_confirm": True,
+            }
+        )
+        result = auth_client(settings).auth.sign_in_with_password(
             {"email": str(credentials.email), "password": credentials.password}
         )
     except AuthApiError as exc:
@@ -143,8 +150,8 @@ def signup(credentials: AuthCredentials, settings: SettingsDep) -> AuthResponse:
         raise HTTPException(status_code=503, detail="Supabase authentication is temporarily unavailable.") from exc
     except StoreError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
-    if result.user is None:
-        raise HTTPException(status_code=502, detail="Supabase did not return a user for this account.")
+    if result.user is None or result.session is None:
+        raise HTTPException(status_code=502, detail="Supabase did not return an active session.")
     return _auth_response(result.user, result.session)
 
 
